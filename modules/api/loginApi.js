@@ -9,7 +9,6 @@ export class LoginApi {
 
     const loginPageHtml = await loginPageResponse.text();
 
-    // Submit login form with proper form data
     const formData = new URLSearchParams();
     formData.append("username", credentials.email);
     formData.append("password", credentials.password);
@@ -21,7 +20,7 @@ export class LoginApi {
         Referer: ENDPOINTS.LOGIN,
       },
       body: formData,
-      redirect: "manual", // Don't follow redirects automatically
+      redirect: "manual",
     });
 
     const responseText = await response.text();
