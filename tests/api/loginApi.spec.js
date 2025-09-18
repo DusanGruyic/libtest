@@ -12,25 +12,24 @@ test.describe("Login API", () => {
 
   test("should login with valid credentials", async () => {
     const response = await loginApi.login(LOGIN_PAYLOAD);
-
-    expect([STATUS_CODES.SEE_OTHER, STATUS_CODES.OK]).toContain(
-      response.status
-    );
+    const setCookieHeader = response.headers.get("set-cookie");
+    expect(response.status).toEqual(STATUS_CODES.SEE_OTHER);
+    expect(setCookieHeader).toBeDefined();
 
     if (response.status === STATUS_CODES.SEE_OTHER) {
       expect(response.redirectLocation).toBeDefined();
     }
-
-    expect(response.isHtml).toBe(true);
-    expect(response.data).toContain("Classic Books");
+    expect(setCookieHeader).toMatch(/session|login|auth/i);
   });
 
-  test("should return session cookies on successful login", async () => {
-    const response = await loginApi.login(LOGIN_PAYLOAD);
+  test("should fail login with invalid credentials", async () => {
+    const invalidCredentials = {
+      ...LOGIN_PAYLOAD,
+      password: `${LOGIN_PAYLOAD.password}4`,
+    };
 
-    const setCookieHeader = response.headers.get("set-cookie");
-    expect(setCookieHeader).toBeDefined();
+    const response = await loginApi.login(invalidCredentials);
 
-    expect(setCookieHeader).toMatch(/session|login|auth/i);
+    expect(response.status).toEqual(STATUS_CODES.UNAUTHORIZED);
   });
 });

@@ -25,8 +25,8 @@ const baseEndopoint = "https://openlibrary.org/";
 
 export const ENDPOINTS = {
   baseEndopoint,
-  LOGIN: `${baseEndopoint}/account/login`,
-  PROFILE: `${baseEndopoint}/people`,
+  LOGIN: `${baseEndopoint}account/login`,
+  PROFILE: `${baseEndopoint}people`,
 };
 
 export default { STATUS_CODES, METHODS, ENDPOINTS };
