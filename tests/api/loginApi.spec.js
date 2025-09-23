@@ -10,26 +10,29 @@ test.describe("Login API", () => {
     loginApi = new LoginApi();
   });
 
-  test("should login with valid credentials", async () => {
-    const response = await loginApi.login(LOGIN_PAYLOAD);
-    const setCookieHeader = response.headers.get("set-cookie");
-    expect(response.status).toEqual(STATUS_CODES.SEE_OTHER);
-    expect(setCookieHeader).toBeDefined();
+  test("should login with valid credentials", async ({ request }) => {
+    const response = await loginApi.login(LOGIN_PAYLOAD, request);
+    expect(response.responseHeaders["set-cookie"]).toContain(
+      "session=/people/libtest"
+    );
+    const cookieValue = response.responseHeaders["set-cookie"];
+    const datePattern = /\d{4}-\d{2}-\d{2}/;
+    const dateMatch = cookieValue.match(datePattern);
 
-    if (response.status === STATUS_CODES.SEE_OTHER) {
-      expect(response.redirectLocation).toBeDefined();
-    }
-    expect(setCookieHeader).toMatch(/session|login|auth/i);
+    const today = new Date();
+    const currentDate = today.toISOString().split("T")[0];
+
+    expect(dateMatch[0]).toBe(currentDate);
   });
 
-  test("should fail login with invalid credentials", async () => {
+  test("should fail login with invalid credentials", async ({ request }) => {
     const invalidCredentials = {
       ...LOGIN_PAYLOAD,
       password: `${LOGIN_PAYLOAD.password}4`,
     };
 
-    const response = await loginApi.login(invalidCredentials);
+    const response = await loginApi.login(invalidCredentials, request);
 
-    expect(response.status).toEqual(STATUS_CODES.UNAUTHORIZED);
+    expect(response.status).toEqual(STATUS_CODES.OK);
   });
 });

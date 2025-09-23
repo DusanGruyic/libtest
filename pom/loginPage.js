@@ -14,9 +14,15 @@ export class LoginPage {
 
   async getCookie() {
     const cookie = await this.page.evaluate(() => {
-      return this.window.localStorage.getItem("cookie");
+      return document.cookie;
     });
 
+    return cookie;
+  }
+
+  async verifyLoginCookie() {
+    const cookie = await this.getCookie();
+    await expect(cookie).toContain("session=/people/libtest");
     return cookie;
   }
 
@@ -36,19 +42,21 @@ export class LoginPage {
     await expect(this.passwordInput).toBeVisible();
   }
 
-  async login({ payload = LOGIN_PAYLOAD, expectSuccess = true }) {
+  async login({ payload = LOGIN_PAYLOAD }) {
+    const responsePromise = this.page.waitForResponse("**/account/login");
     await this.usernameInput.fill(payload.email);
     await this.passwordInput.fill(payload.password);
     await this.loginButton.click();
-    await this.page.waitForLoadState("networkidle");
+
+    const response = await responsePromise;
+    expect(await response.status()).toEqual(303);
   }
 
   async loginWithInvalidCredentials(email, password) {
     await this.navigateToLogin();
-    await this.login({
-      payload: { email, password },
-      expectSuccess: false,
-    });
+    await this.usernameInput.fill(email);
+    await this.passwordInput.fill(password);
+    await this.loginButton.click();
 
     await expect(this.errorMessage).toBeVisible();
   }

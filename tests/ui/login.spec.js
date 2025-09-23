@@ -7,6 +7,7 @@ test.describe("Open Library Login Tests", () => {
 
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
+
     await page.goto("https://openlibrary.org/");
     await page.waitForLoadState("networkidle");
   });
@@ -14,6 +15,7 @@ test.describe("Open Library Login Tests", () => {
   test("should successfully log in with valid credentials", async () => {
     await loginPage.navigateToLogin();
     await loginPage.login({ payload: LOGIN_PAYLOAD });
+    await loginPage.verifyLoginCookie();
   });
 
   test("should show error message for invalid email", async () => {
@@ -33,7 +35,6 @@ test.describe("Open Library Login Tests", () => {
   test("should log in with leading space in email", async () => {
     await loginPage.navigateToLogin();
     await loginPage.login({
-      expectSuccess: true,
       payload: {
         ...LOGIN_PAYLOAD,
         email: ` ${LOGIN_PAYLOAD.email}`,
@@ -44,7 +45,6 @@ test.describe("Open Library Login Tests", () => {
   test("should log in with trailing space in email", async () => {
     await loginPage.navigateToLogin();
     await loginPage.login({
-      expectSuccess: true,
       payload: {
         ...LOGIN_PAYLOAD,
         email: `${LOGIN_PAYLOAD.email} `,
