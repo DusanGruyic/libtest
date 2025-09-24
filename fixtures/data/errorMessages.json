@@ -1,0 +1,4 @@
+{
+  "invalidCredentials": "Wrong password. Please try again",
+  "nonExistentAccount": "No account was found with this email. Please try again"
+}
