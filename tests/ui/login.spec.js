@@ -90,7 +90,7 @@ test.describe("Open Library Login Tests", () => {
     });
   });
 
-  test.only("should not log in with non existent credentials", async () => {
+  test("should not log in with non existent credentials", async () => {
     await loginPage.login({
       payload: {
         email: "12123123@gmail.com",

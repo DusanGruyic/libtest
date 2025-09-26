@@ -25,6 +25,19 @@ test.describe("Login API", () => {
     expect(dateMatch[0]).toBe(currentDate);
   });
 
+  test("should login with leading space in email", async ({ request }) => {
+    const payloadWithLeadingSpace = {
+      ...LOGIN_PAYLOAD,
+      email: ` ${LOGIN_PAYLOAD.email}`,
+    };
+
+    const response = await loginApi.login(payloadWithLeadingSpace, request);
+    expect(response.status).toEqual(STATUS_CODES.SEE_OTHER);
+    expect(response.responseHeaders["set-cookie"]).toContain(
+      "session=/people/libtest"
+    );
+  });
+
   test("should fail login with invalid credentials", async ({ request }) => {
     const invalidCredentials = {
       ...LOGIN_PAYLOAD,
@@ -34,5 +47,98 @@ test.describe("Login API", () => {
     const response = await loginApi.login(invalidCredentials, request);
 
     expect(response.status).toEqual(STATUS_CODES.OK);
+  });
+
+  test("Should not log in with email of a non-registered user", async ({
+    request,
+  }) => {
+    const invalidCredentials = {
+      ...LOGIN_PAYLOAD,
+      email: `a${LOGIN_PAYLOAD.email}`,
+    };
+    const response = await loginApi.login(invalidCredentials, request);
+    expect(response.status).toEqual(STATUS_CODES.OK);
+    if (response.responseHeaders && response.responseHeaders["set-cookie"]) {
+      expect(response.responseHeaders["set-cookie"]).not.toContain(
+        "session=/people/libtest"
+      );
+    }
+  });
+
+  test("should login with all caps email variation", async ({ request }) => {
+    const payloadWithCapsEmail = {
+      ...LOGIN_PAYLOAD,
+      email: LOGIN_PAYLOAD.email.toUpperCase(),
+    };
+
+    const response = await loginApi.login(payloadWithCapsEmail, request);
+    expect(response.status).toEqual(STATUS_CODES.SEE_OTHER);
+    expect(response.responseHeaders["set-cookie"]).toContain(
+      "session=/people/libtest"
+    );
+  });
+
+  test("should fail login with case-sensitive password variation", async ({
+    request,
+  }) => {
+    const invalidCredentials = {
+      ...LOGIN_PAYLOAD,
+      password: LOGIN_PAYLOAD.password.toUpperCase(),
+    };
+    const response = await loginApi.login(invalidCredentials, request);
+
+    expect(response.status).toEqual(STATUS_CODES.OK);
+    if (response.responseHeaders && response.responseHeaders["set-cookie"]) {
+      expect(response.responseHeaders["set-cookie"]).not.toContain(
+        "session=/people/libtest"
+      );
+    }
+  });
+
+  test("should fail login with empty email field", async ({ request }) => {
+    const invalidCredentials = {
+      email: "",
+      password: LOGIN_PAYLOAD.password,
+    };
+
+    const response = await loginApi.login(invalidCredentials, request);
+    expect(response.status).toEqual(STATUS_CODES.OK); // Should be 401 but not working properly
+    if (response.responseHeaders && response.responseHeaders["set-cookie"]) {
+      expect(response.responseHeaders["set-cookie"]).not.toContain(
+        "session=/people/libtest"
+      );
+    }
+  });
+
+  test("should fail login with empty password field", async ({ request }) => {
+    const invalidCredentials = {
+      email: LOGIN_PAYLOAD.email,
+      password: "",
+    };
+
+    const response = await loginApi.login(invalidCredentials, request);
+    expect(response.status).toEqual(STATUS_CODES.OK); // Should be 401 but not working properly
+    if (response.responseHeaders && response.responseHeaders["set-cookie"]) {
+      expect(response.responseHeaders["set-cookie"]).not.toContain(
+        "session=/people/libtest"
+      );
+    }
+  });
+
+  test("should fail login with special characters in password", async ({
+    request,
+  }) => {
+    const invalidCredentials = {
+      ...LOGIN_PAYLOAD,
+      password: "invalid@password#with$special%chars",
+    };
+
+    const response = await loginApi.login(invalidCredentials, request);
+    expect(response.status).toEqual(STATUS_CODES.OK);
+    if (response.responseHeaders && response.responseHeaders["set-cookie"]) {
+      expect(response.responseHeaders["set-cookie"]).not.toContain(
+        "session=/people/libtest"
+      );
+    }
   });
 });
