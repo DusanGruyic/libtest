@@ -36,7 +36,6 @@ export class LoginApi {
     });
 
     const responseHeaders = response.headers();
-    console.log("Response headers:", responseHeaders);
 
     return {
       status: response.status(),
