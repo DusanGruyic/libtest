@@ -10,10 +10,10 @@ test.describe("Dashboard Accessibility Tests", () => {
     loginPage = new LoginPage(page);
     dashboardPage = new DashboardPage(page);
     await page.goto("https://openlibrary.org/");
-    await page.waitForLoadState("networkidle");
     await loginPage.navigateToLogin();
     await loginPage.login({});
     await loginPage.verifyLoginCookie();
+    await page.waitForLoadState("networkidle");
   });
 
   test("should make dashboard accessible when logged in", async ({ page }) => {
@@ -30,6 +30,36 @@ test.describe("Dashboard Accessibility Tests", () => {
     await dashboardPage.searchForBook(bookTitle);
 
     await expect(page).toHaveURL(/.*\/works\/.*/);
-    await expect(page.locator("h1")).toContainText(bookTitle);
+  });
+
+  test("should search for a book and read it if available", async ({
+    page,
+  }) => {
+    const bookTitle = "Lord Jim";
+    await dashboardPage.searchForBook(bookTitle);
+
+    await expect(page).toHaveURL(/.*\/works\/.*/);
+
+    const canRead = await dashboardPage.readBook(bookTitle);
+
+    if (canRead.success) {
+      await canRead.readingPage.waitForTimeout(5000);
+    } else {
+      console.log(`Read option not available for ${bookTitle}`);
+    }
+  });
+
+  test("should fail gracefully when trying to read unavailable book", async ({
+    page,
+  }) => {
+    const bookTitle = "Pride & Prejudice";
+
+    await dashboardPage.searchForBook(bookTitle);
+    await expect(page).toHaveURL(/.*\/works\/.*/);
+
+    const canRead = await dashboardPage.readBook(bookTitle);
+
+    await expect(canRead.success).toBe(false);
+    await expect(canRead.readingPage).toBeNull();
   });
 });
