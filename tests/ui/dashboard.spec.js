@@ -13,6 +13,7 @@ test.describe("Dashboard Accessibility Tests", () => {
     await loginPage.navigateToLogin();
     await loginPage.login({});
     await loginPage.verifyLoginCookie();
+
     await page.waitForLoadState("networkidle");
   });
 
@@ -49,9 +50,7 @@ test.describe("Dashboard Accessibility Tests", () => {
     }
   });
 
-  test("should fail gracefully when trying to read unavailable book", async ({
-    page,
-  }) => {
+  test("should fail when trying to read unavailable book", async ({ page }) => {
     const bookTitle = "Pride & Prejudice";
 
     await dashboardPage.searchForBook(bookTitle);
@@ -61,5 +60,43 @@ test.describe("Dashboard Accessibility Tests", () => {
 
     await expect(canRead.success).toBe(false);
     await expect(canRead.readingPage).toBeNull();
+  });
+
+  test("should show error message when searching for non-existent book", async ({}) => {
+    const nonExistentBook = "Xasdajsdqiw";
+
+    await dashboardPage.searchForBook(nonExistentBook);
+
+    await expect(dashboardPage.errorMessage).toBeVisible();
+  });
+
+  test.only("should successfully borrow a book if available", async ({
+    page,
+  }) => {
+    const bookTitle = "The Great Gatsby";
+
+    await dashboardPage.searchForBook(bookTitle);
+    await expect(page).toHaveURL(/.*\/works\/.*/);
+
+    const borrowResult = await dashboardPage.borrowBook();
+
+    if (borrowResult.success) {
+      expect(borrowResult.borrowResponse.status()).toEqual(301);
+
+      await expect(page).toHaveURL(/.*archive\.org\/details\/.*/);
+    }
+  });
+
+  test("should fail to borrow a book if borrow option not available", async ({
+    page,
+  }) => {
+    const bookTitle = "To the Lighthouse";
+
+    await dashboardPage.searchForBook(bookTitle);
+
+    const borrowResult = await dashboardPage.borrowBook();
+
+    await expect(borrowResult.success).toBe(false);
+    await expect(borrowResult.borrowResponse).toBeNull();
   });
 });

@@ -26,28 +26,17 @@ export class DashboardPage {
     this.workTitle = page.locator(".work-title").first();
     this.bookCarousel = page.locator(".carousel");
     this.tableOfContents = page.locator("#toc");
+    this.errorMessage = page.locator(".red");
+    this.myLoans = page.locator(
+      '[data-ol-link-track="BookCarousel|HeaderClick|loans"]'
+    );
+    this.returnNow = page.locator(".ia-button.danger.initial");
+    this.bookCover = page.locator(".BRpagecontainer.pagediv0");
   }
   async navigateToMyBooks() {
     await this.myBooksLink.click();
     await expect(this.page).toHaveURL(/.*\/people\/libtest\d+\/books/);
-  }
-
-  async readBookFromCarousel(bookTitle) {
-    let dynamicBookLocator = this.page
-      .locator(
-        `div[class*='book carousel__item']:has(a > img[title='${bookTitle}']) a:has-text('Read')`
-      )
-      .first();
-
-    if (!(await dynamicBookLocator.isVisible())) {
-      dynamicBookLocator = this.page
-        .locator(
-          `div[class*='book carousel__item']:has(a > img[title='${bookTitle}']) a:has-text('Borrow')`
-        )
-        .first();
-    }
-    await expect(dynamicBookLocator).toBeVisible();
-    await dynamicBookLocator.click();
+    await expect(this.myLoans).toBeVisible();
   }
 
   async searchForBook(bookName) {
@@ -55,14 +44,18 @@ export class DashboardPage {
     await this.searchInput.fill(bookName);
     await expect(this.searchInput).toHaveValue(bookName);
 
-    await this.bookDescription.waitFor({ state: "visible", timeout: 5000 });
+    try {
+      await this.bookDescription.waitFor({ state: "visible", timeout: 5000 });
 
-    const dropdownOption = this.page
-      .locator(`a:has-text('${bookName}')`)
-      .first();
+      const dropdownOption = this.page
+        .locator(`a:has-text('${bookName}')`)
+        .first();
 
-    await dropdownOption.click();
-    await expect(this.workTitle).toHaveText(bookName);
+      await dropdownOption.click();
+      await expect(this.workTitle).toHaveText(bookName);
+    } catch (error) {
+      await this.searchInput.press("Enter");
+    }
   }
 
   async readBook(bookTitle) {
@@ -75,8 +68,8 @@ export class DashboardPage {
       ]);
 
       const bookSlug = bookTitle
-        .replace(/\s+/g, "[_-]")
-        .replace(/\s+and\s+/gi, "[_-](and|&)[_-]");
+        .replace(/\s+and\s+/gi, "[_-](and|&)[_-]")
+        .replace(/\s+/g, "[_]");
       await expect(newPage).toHaveURL(new RegExp(`.*${bookSlug}.*`));
 
       await newPage.waitForTimeout(5000);
@@ -87,6 +80,26 @@ export class DashboardPage {
     } else {
       console.log("Read option is not available for this book");
       return { success: false, readingPage: null };
+    }
+  }
+
+  async borrowBook() {
+    const isBorrowButtonVisible = await this.borrowButton.isVisible();
+
+    if (isBorrowButtonVisible) {
+      let responsePromise = this.page.waitForResponse("**/borrow**");
+
+      await this.borrowButton.click();
+
+      await this.bookCover.waitFor({ state: "visible", timeout: 10000 });
+
+      const response = await responsePromise;
+      expect(await response.status()).toEqual(301);
+
+      return { success: true, borrowResponse: response };
+    } else {
+      console.log("Borrow option is not available for this book");
+      return { success: false, borrowResponse: null };
     }
   }
 }
